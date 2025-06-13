@@ -618,14 +618,14 @@ currency_options = {
 }
 
 # ----------------- UI -----------------
-st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>🕵️ Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #4B8BBE;'> Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
 st.markdown("<hr style='border: 1px solid #ccc;'>", unsafe_allow_html=True)
 
 if not st.session_state.show_results:
     # ------------- Input Form -------------
     
     # First, create the currency selector outside the form for real-time updates
-    st.markdown("### 📌 Required Job Details")
+    st.markdown("### Required Job Details")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -746,7 +746,7 @@ if st.session_state.show_results:
         probs = torch.softmax(outputs.logits / temperature, dim=1)
         pred_idx = torch.argmax(probs, dim=1).item()
         confidence = probs[0][pred_idx].item() * 100
-        class_labels = ["✅ Real Job Posting", "🚨 Fake Job Posting"]
+        class_labels = [" Real Job Posting", "🚨 Fake Job Posting"]
         prediction_label = class_labels[pred_idx]
 
     # Mismatch Score - pass lists of job titles and descriptions
@@ -787,7 +787,7 @@ if st.session_state.show_results:
     with col3:
         draw_gauge_with_info("Skill Mismatch Score", round(skill_score, 2), skill_tooltip, "skill_info")
     
-    st.markdown(f"### 🏷️ Prediction: **{prediction_label}**")
+    st.markdown(f"###  Prediction: **{prediction_label}**")
 
     # Job Summary
     with st.expander("Job Summary (Your Input)", expanded=True):
