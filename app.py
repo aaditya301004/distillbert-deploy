@@ -746,7 +746,7 @@ if st.session_state.show_results:
         probs = torch.softmax(outputs.logits / temperature, dim=1)
         pred_idx = torch.argmax(probs, dim=1).item()
         confidence = probs[0][pred_idx].item() * 100
-        class_labels = [" Real Job Posting", "🚨 Fake Job Posting"]
+        class_labels = ["Real Job Posting", "🚨 Fake Job Posting"]
         prediction_label = class_labels[pred_idx]
 
     # Mismatch Score - pass lists of job titles and descriptions
