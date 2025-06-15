@@ -791,7 +791,7 @@ if st.session_state.show_results:
     with col3:
         draw_gauge_with_info("Skill Mismatch Score", round(skill_score, 2), skill_tooltip, "skill_info", "skill_gauge")
     
-    st.markdown(f"### 🏷 Prediction: *{prediction_label}*")
+    st.markdown(f"### Prediction: *{prediction_label}*")
 
     # Job Summary
     with st.expander("Job Summary (Your Input)", expanded=True):
