@@ -785,11 +785,11 @@ if st.session_state.show_results:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        draw_gauge_with_info("Model Confidence", round(confidence, 2), confidence_tooltip, "confidence_info")
+        draw_gauge_with_info("Model Confidence", round(confidence, 2), confidence_tooltip, "confidence_info", "confidence_gauge")
     with col2:
-        draw_gauge_with_info("Job-Role Mismatch Score", round(mismatch_score, 2), mismatch_tooltip, "mismatch_info")
+        draw_gauge_with_info("Job-Role Mismatch Score", round(mismatch_score, 2), mismatch_tooltip, "mismatch_info", "mismatch_gauge")
     with col3:
-        draw_gauge_with_info("Skill Mismatch Score", round(skill_score, 2), skill_tooltip, "skill_info")
+        draw_gauge_with_info("Skill Mismatch Score", round(skill_score, 2), skill_tooltip, "skill_info", "skill_gauge")
     
     st.markdown(f"### 🏷 Prediction: *{prediction_label}*")
 
