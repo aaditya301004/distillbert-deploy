@@ -59,3 +59,93 @@ This project combines labeled datasets from public sources with a large volume o
 
 This hybrid dataset enables the model to learn both from clearly labeled examples and unlabeled real-world patterns using pseudo-labeling.
 
+
+## Project Structure
+- Distillbert
+   - Datasets
+        - Labeled Dataset
+        - Unlabled Dataset
+   - Model_folder
+        - config.json
+        - model.safetensors
+        - vocab.txt
+        - special_tokens_map.json
+        - tokenizer_config.json
+   - requiremnets.txt
+   - evaluator.py
+   - app.py
+   - README.md
+ 
+
+## Technologies Used
+
+- **Python**: Version 3.9+
+
+- **HuggingFace Transformers**:  
+  Utilized `DistilBERT` for transformer-based text classification.
+
+- **Core Libraries**:  
+  - `Scikit-learn` – Model training, evaluation, and metrics  
+  - `Pandas` – Data manipulation and preprocessing  
+  - `NumPy` – Numerical operations  
+  - `Plotly` – Interactive data visualization  
+  - `Rapidfuzz` – Fast and efficient string matching and fuzzy comparison  
+  - `NLTK` – Natural Language Toolkit for basic NLP preprocessing tasks  
+  - `SentenceTransformers` – Sentence-level embeddings for semantic similarity analysis
+
+- **UI & Visualization**:  
+  - `Streamlit` – interactive web interface for model inference  
+  - `Plotly` – for visualizing performance metrics and job data insights
+
+
+## How to Run
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/aadityashrivastav/Distilbert-Deploy.git
+   cd DistilBERT_Fake_Job_Detector
+
+2. Install Dependencies:
+   ```sh
+    pip install -r requirements.txt
+
+3. Launch the Streamlit Application:
+   ```sh
+   streamlit run app.py
+
+
+## Results & Insights
+
+The DistilBERT-based fake job detection system delivers strong performance and practical value across several key areas:
+
+- **Real-Time Prediction**  
+  The Streamlit UI enables real-time, interactive job post evaluations with immediate fraud likelihood feedback.
+
+- **Semantic Consistency Detection**  
+  Successfully flags job posts with mismatched or suspicious content using sentence-level embeddings.
+
+- **Scalable Learning**  
+  Semi-supervised learning with pseudo-labeling improved performance by leveraging over 1,80,000 real, unlabeled job posts.
+
+- **Custom Evaluation Layer**  
+  Introduced domain-specific heuristics for deeper inspection of job content, including:
+  - **Title-Description Semantic Alignment** – Detects inconsistency between job role and responsibilities.  
+  - **Role-Skill Mismatch** – Flags when required skills do not logically match the stated role.  
+  - **Salary Credibility Check** – Compares salary range to role seniority and industry norms.
+
+
+## Contributors
+
+- Aaditya Shrivastav
+- Aditya Madhav Mantri
+- Kirti Upadhyay
+- Shivani Parate
+  
+
+## Contact
+
+For any inquiries, reach out to:
+- **Aaditya Shrivastav** - aadityashrivastav30@gmail.com
+- **Aditya Madhav Mantri** - adityamantri1103@gmail.com
+- **Kirti Upadhyay** - kittuupadhyay1539@gmail.com
+- **Shivani Parate** - shivanidutt602@gmail.com
