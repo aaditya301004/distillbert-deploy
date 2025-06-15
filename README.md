@@ -132,6 +132,31 @@ The DistilBERT-based fake job detection system delivers strong performance and p
   - **Title-Description Semantic Alignment** – Detects inconsistency between job role and responsibilities.  
   - **Role-Skill Mismatch** – Flags when required skills do not logically match the stated role.  
   - **Salary Credibility Check** – Compares salary range to role seniority and industry norms.
+ 
+
+## Future Work & Advanced Version
+
+A more advanced version of this system is currently under active development to enhance the depth and interpretability of fake job detection.
+
+### Key Improvements in Progress:
+- **Model Upgrade**:  
+  Transitioning from `DistilBERT` to a more powerful `BERT-base-uncased` model for deeper contextual understanding.
+
+- **Generative Intelligence with Gemini**:  
+  Integrating Google’s **Gemini** model to act as a generative decoder. The system will auto-generate "ideal" job postings based on input fields and compare them with the original using semantic similarity.
+
+### Architecture Highlights:
+- **Encoder-Decoder Coupling**:  
+  - `BERT-base-uncased`: Acts as an encoder to understand the input job post.  
+  - `Gemini`: Acts as a decoder to generate a reference post based on provided metadata (title, skills, etc.).
+
+- **Reference-Based Evaluation**:  
+  Measures similarity between the actual job post and the AI-generated ideal version using cosine similarity and logic-based heuristics.
+
+- **Explainability Focus**:  
+  Enables model decisions to be interpreted by end users, platforms, or analysts with a justification layer highlighting semantic mismatches and potential red flags.
+
+This upcoming system aims to deliver enterprise-grade robustness and interpretability for job platforms, recruitment firms, and fraud detection services.
 
 
 ## Contributors
