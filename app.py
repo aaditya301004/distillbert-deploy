@@ -629,7 +629,7 @@ if not st.session_state.show_results:
     # ------------- Input Form -------------
     
     # First, create the currency selector outside the form for real-time updates
-    st.markdown("### 📌 Required Job Details")
+    st.markdown("### Required Job Details")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -725,7 +725,7 @@ if not st.session_state.show_results:
 
 # ----------------- Results Page -----------------
 if st.session_state.show_results:
-    st.markdown("##  Prediction Results")
+    st.markdown("## Prediction Results")
 
     inputs = st.session_state.get("job_inputs", {})
 
@@ -750,7 +750,7 @@ if st.session_state.show_results:
         probs = torch.softmax(outputs.logits / temperature, dim=1)
         pred_idx = torch.argmax(probs, dim=1).item()
         confidence = probs[0][pred_idx].item() * 100
-        class_labels = ["✅ Real Job Posting", "🚨 Fake Job Posting"]
+        class_labels = ["Real Job Posting", "🚨 Fake Job Posting"]
         prediction_label = class_labels[pred_idx]
 
     # Mismatch Score - pass lists of job titles and descriptions
@@ -797,7 +797,7 @@ if st.session_state.show_results:
     with st.expander("Job Summary (Your Input)", expanded=True):
         for key, val in inputs.items():
             if val.strip():
-                st.markdown(f"{key}:** {val}")
+                st.markdown(f"{key}: {val}")
 
     # Back button to submit again
     if st.button("🔄 Evaluate Another Job"):
