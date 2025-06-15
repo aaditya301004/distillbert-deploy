@@ -1,8 +1,6 @@
 ## Overview
 This project focuses on detecting fake job postings using a fine-tuned **DistilBERT** model, optimized for natural language understanding. It leverages a **semi-supervised learning pipeline** that combines labeled datasets from Kaggle and OpenML with over **200,000 unlabeled real-world job listings** scraped from platforms like Naukri.com. The goal is to build a robust, scalable, and real-world-applicable model that flags suspicious job postings based on content semantics, structure, and red flag indicators.
 
----
-
 ## Features
 
 - **DistilBERT-Based Classification**  
@@ -22,6 +20,5 @@ This project focuses on detecting fake job postings using a fine-tuned **DistilB
 - **Scalable Data Pipeline**  
   Modular structure supports continuous ingestion of new scraped job listings for retraining and evaluation.
 
----
 
 
