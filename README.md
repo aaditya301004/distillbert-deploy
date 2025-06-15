@@ -34,7 +34,7 @@ This project combines labeled datasets from public sources with a large volume o
 
 - **Size**: ~55,000 labeled records  
 - **Structure**:
-  - `job_title`, `job_description`, `skills`, `company_profile`, `employment_type`, `location`, `salary`, `label`  
+  - `job_title`, `job_description`, `skills_required`, `employment_type`, `location`, `salary_range`, `industry`, `company_profile`, `label`  
   - Labels: `0` for real, `1` for fake
 
 - **Cleaning Tasks**:
