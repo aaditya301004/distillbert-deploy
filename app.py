@@ -5,124 +5,358 @@ os.environ["TRANSFORMERS_NO_TF_WARNING"] = "1"
 import streamlit as st
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import torch
-from evaluator import RobustJobMismatchEvaluator
+from evaluator import RobustJobMismatchEvaluator, SkillValidityEvaluator
 import plotly.graph_objects as go
 
-# ----------------- Glassmorphism CSS -----------------
+# ----------------- Custom CSS -----------------
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-family: 'Segoe UI', sans-serif;
-    background: radial-gradient(circle at top left, #0f172a, #1e293b);
-    color: #f1f5f9;
+/* ==== BACKGROUND BLOBS ==== */
+body::before {
+    content: "";
+    position: fixed;
+    top: -10%;
+    left: -10%;
+    width: 130%;
+    height: 130%;
+    background: radial-gradient(circle at 20% 20%, #ff6ec4, transparent 40%),
+                radial-gradient(circle at 80% 30%, #7873f5, transparent 40%),
+                radial-gradient(circle at 50% 80%, #41c7b9, transparent 40%);
+    opacity: 0.2;
+    z-index: -1;
+    animation: float 30s infinite alternate ease-in-out;
+}
+
+@keyframes float {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-5%, -5%); }
 }
 
 .stApp {
-    background: transparent;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-/* Title Styling */
-h1 {
-    font-weight: 800 !important;
-    color: #e0f2fe;
-    text-align: center;
-    text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
-}
-
-/* Page Container Padding */
+/* ==== GLASS PANEL STYLE ==== */
 .block-container {
-    padding: 2rem 2rem 3rem 2rem;
-}
-
-/* Glassy Form Styling */
-.stForm {
-    background: rgba(30, 41, 59, 0.6) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
     padding: 2rem;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    animation: fadeInUp 0.8s ease-out;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    margin-top: 30px;
 }
 
-/* Form Label */
-label {
-    font-weight: 600 !important;
-    color: #f1f5f9 !important;
-    font-size: 1.05rem !important;
-    margin-bottom: 0.25rem;
+/* ==== PLOTLY GAUGE TRANSPARENT BACKGROUND FIX ==== */
+.js-plotly-plot .plotly {
+    background: transparent !important;
+}
+
+.js-plotly-plot .plotly .svg-container {
+    background: transparent !important;
+}
+
+.js-plotly-plot .plotly .main-svg {
+    background: transparent !important;
+}
+
+/* Fix for plotly charts */
+.js-plotly-plot .plotly .modebar {
+    background: rgba(0, 0, 0, 0) !important;
+}
+
+/* Remove any background from plotly containers */
+div[data-testid="stPlotlyChart"] > div {
+    background: transparent !important;
+}
+
+/* ==== INFO BUTTON TOOLTIP STYLES ==== */
+.info-button-container {
+    position: relative;
     display: inline-block;
+    margin-left: 8px;
 }
 
-/* Input Fields */
-input, textarea, select {
-    background: rgba(15, 23, 42, 0.8) !important;
-    color: #f8fafc !important;
-    border: none !important;
-    border-radius: 10px !important;
-    padding: 0.6rem 0.9rem !important;
-    font-size: 1rem !important;
-    margin-top: 0.3rem;
-    margin-bottom: 1rem;
-    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8), inset -1px -1px 3px rgba(255,255,255,0.05);
-    transition: all 0.3s ease;
-}
-
-input:hover, textarea:hover, select:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 1px #3b82f6, 0 0 8px #3b82f6;
-}
-
-/* Primary Button */
-button[kind="primary"] {
-    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 12px !important;
-    padding: 0.7rem 1.5rem !important;
+.info-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    color: white;
+    cursor: help;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
-    font-size: 1rem;
-    box-shadow: 4px 4px 10px rgba(0,0,0,0.6);
-    transition: all 0.3s ease-in-out;
-    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-button[kind="primary"]:hover {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.7), 0 4px 20px rgba(0,0,0,0.5);
+.info-button:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-/* Fade-in Animation */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(15px);
+.tooltip {
+    visibility: hidden;
+    width: 280px;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    text-align: left;
+    border-radius: 8px;
+    padding: 12px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -140px;
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+    font-size: 13px;
+    line-height: 1.4;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+}
+
+.info-button-container:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Light mode tooltip */
+@media (prefers-color-scheme: light) {
+    .tooltip {
+        background: rgba(255, 255, 255, 0.95);
+        color: #333;
+        border: 1px solid rgba(0, 0, 0, 0.15);
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .tooltip::after {
+        border-color: rgba(255, 255, 255, 0.95) transparent transparent transparent;
     }
 }
 
-/* Mobile Responsive Adjustments */
-@media screen and (max-width: 768px) {
-    .stForm {
-        padding: 1.2rem !important;
+/* ==== GAUGE TITLE STYLING ==== */
+.gauge-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ==== LIGHT MODE ==== */
+@media (prefers-color-scheme: light) {
+    .stApp {
+        background: linear-gradient(135deg, #f0f0f0, #dfe9f3);
     }
 
-    input, textarea, select {
-        font-size: 0.95rem !important;
+    h1, h2, h3, label {
+        color: #222 !important;
+        text-shadow: none;
     }
 
-    h1 {
-        font-size: 1.75rem !important;
+    /* Specific targeting for form inputs */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        color: #000 !important;
+        border: 1px solid rgba(0, 0, 0, 0.25) !important;
+        border-radius: 4px !important;
     }
+
+    /* Number inputs - make them white like other inputs */
+    .stNumberInput > div > div > input {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        color: #000 !important;
+        border: 1px solid rgba(0, 0, 0, 0.25) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Selectbox styling - target the main container */
+    .stSelectbox [data-baseweb="select"] > div {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        color: #000 !important;
+        border: 1px solid rgba(0, 0, 0, 0.25) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Only hide the search input that appears INSIDE the dropdown, not the main selectbox */
+    .stSelectbox [data-baseweb="menu"] input[type="text"] {
+        display: none !important;
+    }
+
+    /* Hide filter input in dropdown options */
+    .stSelectbox [data-baseweb="popover"] input {
+        display: none !important;
+    }
+
+    ::placeholder {
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    /* Focus states */
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stNumberInput > div > div > input:focus,
+    .stSelectbox [data-baseweb="select"]:focus-within > div {
+        border: 1px solid #0077ff !important;
+        box-shadow: 0 0 6px #0077ff !important;
+        outline: none !important;
+    }
+
+    /* Button styling */
+    .stButton > button {
+        background-color: #0077ff !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+
+    .stFormSubmitButton > button {
+        background-color: #0077ff !important;
+        color: #fff !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* ==== DARK MODE ==== */
+@media (prefers-color-scheme: dark) {
+    .stApp {
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    }
+
+    h1, h2, h3, label {
+        color: #ffffff !important;
+        text-shadow: 0 0 3px rgba(255, 255, 255, 0.3), 0 0 6px rgba(0, 230, 246, 0.3);
+    }
+
+    /* Specific targeting for form inputs */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Number inputs - make them match dark mode styling */
+    .stNumberInput > div > div > input {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Selectbox styling - target the main container */
+    .stSelectbox [data-baseweb="select"] > div {
+        background-color: rgba(0, 0, 0, 0.1) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 4px !important;
+    }
+
+    /* Only hide the search input that appears INSIDE the dropdown, not the main selectbox */
+    .stSelectbox [data-baseweb="menu"] input[type="text"] {
+        display: none !important;
+    }
+
+    /* Hide filter input in dropdown options */
+    .stSelectbox [data-baseweb="popover"] input {
+        display: none !important;
+    }
+
+    ::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Focus states */
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stNumberInput > div > div > input:focus,
+    .stSelectbox [data-baseweb="select"]:focus-within > div {
+        border: 1px solid #00e6f6 !important;
+        box-shadow: 0 0 6px #00e6f6 !important;
+        outline: none !important;
+    }
+
+    /* Button styling */
+    .stButton > button {
+        background-color: #00e6f6 !important;
+        color: #000 !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+
+    .stFormSubmitButton > button {
+        background-color: #00e6f6 !important;
+        color: #000 !important;
+        border: none !important;
+        border-radius: 6px !important;
+    }
+}
+
+/* ==== GENERAL FIXES ==== */
+/* Fix for other Streamlit text elements */
+.css-1cpxqw2, .css-1offfwp, .css-qri22k, .css-10trblm {
+    color: inherit !important;
+}
+
+/* Ensure selectbox dropdown arrow is visible */
+.stSelectbox svg {
+    color: inherit !important;
+    opacity: 0.7 !important;
+}
+
+/* Fix for selectbox dropdown menu */
+.stSelectbox [data-baseweb="menu"] {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    border-radius: 6px !important;
+}
+
+/* Dark mode dropdown menu */
+@media (prefers-color-scheme: dark) {
+    .stSelectbox [data-baseweb="menu"] {
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+}
+
+/* Fix for form container spacing */
+.stForm {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Ensure expander styling */
+.streamlit-expanderHeader {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px !important;
 }
 </style>
-
 """, unsafe_allow_html=True)
+
 
 # ----------------- Load Model & Evaluator -----------------
 @st.cache_resource
@@ -133,73 +367,349 @@ def load_model_and_tokenizer():
     return model, tokenizer
 
 @st.cache_resource
-def load_evaluator():
-    return RobustJobMismatchEvaluator()
+def load_evaluators():
+    return RobustJobMismatchEvaluator(), SkillValidityEvaluator()
 
 model, tokenizer = load_model_and_tokenizer()
-evaluator = load_evaluator()
+mismatch_evaluator, skill_evaluator = load_evaluators()
+
+# ----------------- Info Button Helper Function -----------------
+def create_info_button(tooltip_text, button_id):
+    return f"""
+    <div class="info-button-container">
+        <button class="info-button" id="{button_id}">i</button>
+        <span class="tooltip">{tooltip_text}</span>
+    </div>
+    """
 
 # ----------------- Gauge Drawing Function -----------------
-def draw_gauge(title, value):
+def draw_gauge_with_info(title, value, tooltip_text, button_id):
+    # Create title with info button
+    title_html = f"""
+    <div class="gauge-title">
+        {title}
+        {create_info_button(tooltip_text, button_id)}
+    </div>
+    """
+    
+    st.markdown(title_html, unsafe_allow_html=True)
+    
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': title},
         gauge={
             'axis': {'range': [0, 100], 'tickwidth': 1},
-            'bar': {'color': "#3b82f6"},
-            'bgcolor': "white",
-            'borderwidth': 1,
+            'bar': {'color': "royalblue"},
+            'bgcolor': "rgba(0,0,0,0)",  # Make gauge background transparent
+            'borderwidth': 0,  # Remove border
             'steps': [
-                {'range': [0, 50], 'color': '#fee2e2'},
-                {'range': [50, 75], 'color': '#fef9c3'},
-                {'range': [75, 100], 'color': '#d1fae5'}
+                {'range': [0, 50], 'color': 'rgba(248, 215, 218, 0.7)'},  # Semi-transparent colors
+                {'range': [50, 75], 'color': 'rgba(255, 243, 205, 0.7)'},
+                {'range': [75, 100], 'color': 'rgba(212, 237, 218, 0.7)'}
             ],
         }
     ))
-    fig.update_layout(height=250, margin=dict(t=20, b=0, l=0, r=0))
+    
+    # Set figure background to transparent
+    fig.update_layout(
+        height=165,
+        margin=dict(t=0, b=0, l=0, r=0),
+        paper_bgcolor='rgba(0,0,0,0)',  # Transparent paper background
+        plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot background
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
 
 # ----------------- Initialize Session -----------------
 if "show_results" not in st.session_state:
     st.session_state.show_results = False
 
+# Define currency options globally - Comprehensive list of world currencies
+currency_options = {
+    # Major Global Currencies
+    "USD": "US Dollar",
+    "EUR": "Euro",
+    "GBP": "British Pound Sterling",
+    "JPY": "Japanese Yen",
+    "CNY": "Chinese Yuan Renminbi",
+    "CHF": "Swiss Franc",
+    "CAD": "Canadian Dollar",
+    "AUD": "Australian Dollar",
+    
+    # Asian Currencies
+    "INR": "Indian Rupee",
+    "SGD": "Singapore Dollar",
+    "HKD": "Hong Kong Dollar",
+    "KRW": "South Korean Won",
+    "TWD": "Taiwan New Dollar",
+    "THB": "Thai Baht",
+    "MYR": "Malaysian Ringgit",
+    "IDR": "Indonesian Rupiah",
+    "PHP": "Philippine Peso",
+    "VND": "Vietnamese Dong",
+    "BDT": "Bangladeshi Taka",
+    "PKR": "Pakistani Rupee",
+    "LKR": "Sri Lankan Rupee",
+    "NPR": "Nepalese Rupee",
+    "BTN": "Bhutanese Ngultrum",
+    "MVR": "Maldivian Rufiyaa",
+    "MMK": "Myanmar Kyat",
+    "KHR": "Cambodian Riel",
+    "LAK": "Laotian Kip",
+    "BND": "Brunei Dollar",
+    "MOP": "Macanese Pataca",
+    "MNT": "Mongolian Tugrik",
+    "KZT": "Kazakhstani Tenge",
+    "UZS": "Uzbekistani Som",
+    "KGS": "Kyrgyzstani Som",
+    "TJS": "Tajikistani Somoni",
+    "TMT": "Turkmenistani Manat",
+    "AFN": "Afghan Afghani",
+    
+    # Middle Eastern Currencies
+    "AED": "UAE Dirham",
+    "SAR": "Saudi Riyal",
+    "QAR": "Qatari Riyal",
+    "KWD": "Kuwaiti Dinar",
+    "BHD": "Bahraini Dinar",
+    "OMR": "Omani Rial",
+    "JOD": "Jordanian Dinar",
+    "ILS": "Israeli New Shekel",
+    "TRY": "Turkish Lira",
+    "IRR": "Iranian Rial",
+    "IQD": "Iraqi Dinar",
+    "SYP": "Syrian Pound",
+    "LBP": "Lebanese Pound",
+    "YER": "Yemeni Rial",
+    
+    # European Currencies (Non-Euro)
+    "NOK": "Norwegian Krone",
+    "SEK": "Swedish Krona",
+    "DKK": "Danish Krone",
+    "ISK": "Icelandic Krona",
+    "PLN": "Polish Zloty",
+    "CZK": "Czech Koruna",
+    "HUF": "Hungarian Forint",
+    "RON": "Romanian Leu",
+    "BGN": "Bulgarian Lev",
+    "HRK": "Croatian Kuna",
+    "RSD": "Serbian Dinar",
+    "BAM": "Bosnia-Herzegovina Convertible Mark",
+    "MKD": "Macedonian Denar",
+    "ALL": "Albanian Lek",
+    "RUB": "Russian Ruble",
+    "UAH": "Ukrainian Hryvnia",
+    "BYN": "Belarusian Ruble",
+    "MDL": "Moldovan Leu",
+    "GEL": "Georgian Lari",
+    "AMD": "Armenian Dram",
+    "AZN": "Azerbaijani Manat",
+    
+    # African Currencies
+    "ZAR": "South African Rand",
+    "NGN": "Nigerian Naira",
+    "EGP": "Egyptian Pound",
+    "KES": "Kenyan Shilling",
+    "UGX": "Ugandan Shilling",
+    "TZS": "Tanzanian Shilling",
+    "ETB": "Ethiopian Birr",
+    "GHS": "Ghanaian Cedi",
+    "MAD": "Moroccan Dirham",
+    "TND": "Tunisian Dinar",
+    "DZD": "Algerian Dinar",
+    "LYD": "Libyan Dinar",
+    "AOA": "Angolan Kwanza",
+    "MZN": "Mozambican Metical",
+    "ZMW": "Zambian Kwacha",
+    "BWP": "Botswana Pula",
+    "NAD": "Namibian Dollar",
+    "SZL": "Swazi Lilangeni",
+    "LSL": "Lesotho Loti",
+    "MWK": "Malawian Kwacha",
+    "ZWL": "Zimbabwean Dollar",
+    "MGA": "Malagasy Ariary",
+    "MUR": "Mauritian Rupee",
+    "SCR": "Seychellois Rupee",
+    "XOF": "West African CFA Franc",
+    "XAF": "Central African CFA Franc",
+    "GMD": "Gambian Dalasi",
+    "SLL": "Sierra Leonean Leone",
+    "LRD": "Liberian Dollar",
+    "CVE": "Cape Verdean Escudo",
+    "STN": "São Tomé and Príncipe Dobra",
+    "RWF": "Rwandan Franc",
+    "BIF": "Burundian Franc",
+    "DJF": "Djiboutian Franc",
+    "SOS": "Somali Shilling",
+    "ERN": "Eritrean Nakfa",
+    "SDG": "Sudanese Pound",
+    "SSP": "South Sudanese Pound",
+    "CDF": "Congolese Franc",
+    "XPF": "CFP Franc",
+    
+    # North American Currencies
+    "MXN": "Mexican Peso",
+    "GTQ": "Guatemalan Quetzal",
+    "BZD": "Belize Dollar",
+    "CRC": "Costa Rican Colón",
+    "NIO": "Nicaraguan Córdoba",
+    "HNL": "Honduran Lempira",
+    "SVC": "Salvadoran Colón",
+    "PAB": "Panamanian Balboa",
+    "CUP": "Cuban Peso",
+    "CUC": "Cuban Convertible Peso",
+    "DOP": "Dominican Peso",
+    "HTG": "Haitian Gourde",
+    "JMD": "Jamaican Dollar",
+    "KYD": "Cayman Islands Dollar",
+    "BSD": "Bahamian Dollar",
+    "BBD": "Barbadian Dollar",
+    "XCD": "East Caribbean Dollar",
+    "TTD": "Trinidad and Tobago Dollar",
+    
+    # South American Currencies
+    "BRL": "Brazilian Real",
+    "ARS": "Argentine Peso",
+    "CLP": "Chilean Peso",
+    "COP": "Colombian Peso",
+    "PEN": "Peruvian Sol",
+    "VES": "Venezuelan Bolívar Soberano",
+    "UYU": "Uruguayan Peso",
+    "PYG": "Paraguayan Guaraní",
+    "BOB": "Bolivian Boliviano",
+    "GYD": "Guyanese Dollar",
+    "SRD": "Surinamese Dollar",
+    "FKP": "Falkland Islands Pound",
+    
+    # Oceania Currencies
+    "NZD": "New Zealand Dollar",
+    "FJD": "Fijian Dollar",
+    "TOP": "Tongan Paʻanga",
+    "WST": "Samoan Tālā",
+    "VUV": "Vanuatu Vatu",
+    "SBD": "Solomon Islands Dollar",
+    "PGK": "Papua New Guinean Kina",
+    "ANG": "Netherlands Antillean Guilder",
+    "AWG": "Aruban Florin",
+    
+    # Cryptocurrencies (Popular ones)
+    "BTC": "Bitcoin",
+    "ETH": "Ethereum",
+    "USDT": "Tether",
+    "BNB": "Binance Coin",
+    "XRP": "Ripple",
+    "ADA": "Cardano",
+    "SOL": "Solana",
+    "DOT": "Polkadot",
+    "DOGE": "Dogecoin",
+    "AVAX": "Avalanche",
+    "MATIC": "Polygon",
+    "LTC": "Litecoin",
+    "BCH": "Bitcoin Cash",
+    "LINK": "Chainlink",
+    "UNI": "Uniswap",
+    
+    # Special/Regional Currencies
+    "XDR": "Special Drawing Rights (IMF)",
+    "XAU": "Gold (Troy Ounce)",
+    "XAG": "Silver (Troy Ounce)",
+    "XPT": "Platinum (Troy Ounce)",
+    "XPD": "Palladium (Troy Ounce)",
+    
+    # Other/Unlisted
+    "Other": "Other/Unlisted Currency"
+}
+
 # ----------------- UI -----------------
-st.markdown("""
-    <h1 style='text-align: center;'> Job Fraud & Mismatch Evaluator</h1>
-    <hr style='border: 1px solid #ccc;'>
-""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>🕵 Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
+st.markdown("<hr style='border: 1px solid #ccc;'>", unsafe_allow_html=True)
 
 if not st.session_state.show_results:
-    with st.form("job_form"):
-        st.markdown("<div class='glass-container'>", unsafe_allow_html=True)
-        st.markdown("###  Required Job Details")
+    # ------------- Input Form -------------
+    
+    # First, create the currency selector outside the form for real-time updates
+    st.markdown("### 📌 Required Job Details")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            job_title = st.text_input(" Job Title *", placeholder="e.g., Data Analyst")
-        with col2:
-            employment_type = st.selectbox(" Employment Type *", [
-                "Full-time", "Internship", "Internship & Graduate", "Other Part-time", "Temporary"
-            ])
+    col1, col2 = st.columns(2)
+    with col1:
+        job_title = st.text_input(" Job Title *", placeholder="e.g., Data Analyst")
+    with col2:
+        employment_type = st.selectbox("Employment Type *", [
+        "Full-time",
+        "Part-time",
+        "Internship",
+        "Freelance / Contract",
+        "Temporary",
+        "Volunteer",
+        "Apprenticeship",
+        "Seasonal",
+        "Commission-Based",
+        "Remote (Full-time)",
+        "Remote (Part-time)",
+        "Graduate Program",
+        "Internship & Graduate",
+        "Self-employed",
+        "Casual / On-call",
+        "Work Abroad",
+        "Fixed-term",
+        "Fellowship",
+        "Other"
+    ])
 
-        job_description = st.text_area(" Job Description *", height=150)
-        skill_desc = st.text_area(" Skills Required *", height=100)
-        location = st.text_input(" Location *", placeholder="e.g., Bangalore, India")
+    job_description = st.text_area(" Job Description *", height=150)
+    skill_desc = st.text_area(" Skills Required *", height=100)
+    location = st.text_input(" Location *", placeholder="e.g., Bangalore, India")
 
-        st.markdown("###  Optional Details")
-        salary_range = st.text_input(" Salary Range", placeholder="e.g., 4-6 LPA")
-        industry = st.text_input(" Industry", placeholder="e.g., IT Services")
-        company_profile = st.text_area(" Company Profile", height=100)
+    st.markdown("###  Optional Details")
 
-        submitted = st.form_submit_button(" Evaluate", use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("#### Salary Range")
+    col3, col4, col5, col6 = st.columns([1.5, 1.5, 1, 1.5])
+    with col3:
+        min_salary = st.number_input("Min Salary", min_value=0.0, step=1000.0, format="%.2f", key="min_salary")
+    with col4:
+        max_salary = st.number_input("Max Salary", min_value=0.0, step=1000.0, format="%.2f", key="max_salary")
+    with col5:
+        # Currency selector with real-time update
+        currency = st.selectbox(
+            "Currency",
+            options=list(currency_options.keys()),
+            key="currency",
+            format_func=lambda x: f"{x}"
+        )
+        
+        # Show full name immediately with real-time update
+        full_name = currency_options[currency]
+        st.markdown(
+            f'<span style="font-size: 0.85rem;" title="{full_name}">💡 <b>{currency}</b> — {full_name}</span>',
+            unsafe_allow_html=True
+        )
 
-    if submitted:
+    with col6:
+        salary_period = st.selectbox("Salary Period", ["Per Year", "Per Month", "Per Week", "Per Day", "Per Hour"], key="salary_period")
+
+    # Validate salary inputs
+    salary_range = ""
+    if max_salary > 0 and min_salary > 0:
+        if max_salary < min_salary:
+            st.error("⚠ Max Salary should be greater than or equal to Min Salary.")
+        else:
+            salary_range = f"{currency} {min_salary:,.2f} - {max_salary:,.2f} {salary_period}"
+    elif min_salary > 0:
+        salary_range = f"{currency} {min_salary:,.2f} {salary_period}"
+    elif max_salary > 0:
+        salary_range = f"{currency} {max_salary:,.2f} {salary_period}"
+   
+    
+    industry = st.text_input(" Industry", placeholder="e.g., IT Services")
+    company_profile = st.text_area(" Company Profile", height=100)
+
+    # Submit button outside the form
+    if st.button("🚀 Evaluate", use_container_width=True):
         if not all([job_title.strip(), job_description.strip(), skill_desc.strip(), location.strip(), employment_type.strip()]):
             st.error("⚠ Please fill all the required fields marked with *.")
         else:
+            # Store data in session
             st.session_state.job_inputs = {
                 "Job Title": job_title,
                 "Employment Type": employment_type,
@@ -211,16 +721,28 @@ if not st.session_state.show_results:
                 "Company Profile": company_profile,
             }
             st.session_state.show_results = True
-            st.experimental_set_query_params(page="results")
+            st.rerun()
 
 # ----------------- Results Page -----------------
 if st.session_state.show_results:
-    st.markdown("<div class='glass-container'>", unsafe_allow_html=True)
     st.markdown("##  Prediction Results")
 
     inputs = st.session_state.get("job_inputs", {})
-    combined_text = f"{inputs['Job Title']} {inputs['Job Description']} {inputs['Skills Required']} {inputs['Employment Type']} {inputs['Location']}"
 
+    # Combine all relevant text for model prediction
+    fields = [
+    inputs.get("Job Title", ""),
+    inputs.get("Job Description", ""),
+    inputs.get("Skills Required", ""),
+    inputs.get("Employment Type", ""),
+    inputs.get("Location", ""),
+    inputs.get("Salary Range", ""),
+    inputs.get("Company Profile", "")
+    ]
+    combined_text = " ".join([field.strip() for field in fields if field.strip()])
+
+
+    # Model Prediction
     temperature = 2.0
     tokens = tokenizer(combined_text, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
@@ -228,26 +750,56 @@ if st.session_state.show_results:
         probs = torch.softmax(outputs.logits / temperature, dim=1)
         pred_idx = torch.argmax(probs, dim=1).item()
         confidence = probs[0][pred_idx].item() * 100
-        class_labels = [" Real Job Posting", " Fake Job Posting"]
+        class_labels = ["✅ Real Job Posting", "🚨 Fake Job Posting"]
         prediction_label = class_labels[pred_idx]
 
-    mismatch_score = evaluator.evaluate([inputs["Job Title"]], [inputs["Job Description"]])
+    # Mismatch Score - pass lists of job titles and descriptions
+# Evaluations
+    mismatch_score = mismatch_evaluator.evaluate([inputs["Job Title"]], [inputs["Job Description"]])
+    skill_score = skill_evaluator.evaluate(inputs["Skills Required"], inputs["Job Description"], inputs.get("Industry", ""))
 
-    col1, col2 = st.columns(2)
+    # Define tooltip texts
+    confidence_tooltip = """
+    <strong>Model Confidence Score</strong><br>
+    This metric indicates how confident our trained model is in its prediction about whether the job posting is real or fake.<br><br>
+    • <strong>High Score (75-100%):</strong> Model is very confident in its prediction<br>
+    • <strong>Medium Score (50-75%):</strong> Model has moderate confidence<br>
+    • <strong>Low Score (0-50%):</strong> Model is uncertain about the prediction
+    """
+    
+    mismatch_tooltip = """
+    <strong>Job-Role Mismatch Score</strong><br>
+    This score measures how well the job title aligns with the job description content.<br><br>
+    • <strong>Low Score (0-50%):</strong> Good alignment between title and description<br>
+    • <strong>Medium Score (50-75%):</strong> Some inconsistencies detected<br>
+    • <strong>High Score (75-100%):</strong> Significant mismatch - potential red flag
+    """
+    
+    skill_tooltip = """
+    <strong>Skill Mismatch Score</strong><br>
+    This evaluates whether the required skills match the job description and industry standards.<br><br>
+    • <strong>Low Score (0-50%):</strong> Skills align well with job requirements<br>
+    • <strong>Medium Score (50-75%):</strong> Some skill inconsistencies<br>
+    • <strong>High Score (75-100%):</strong> Major skill misalignment - possible fake posting
+    """
+
+    col1, col2, col3 = st.columns(3)
     with col1:
-        draw_gauge("Model Confidence", round(confidence, 2))
+        draw_gauge_with_info("Model Confidence", round(confidence, 2), confidence_tooltip, "confidence_info")
     with col2:
-        draw_gauge("Job-Role Match Score", round(mismatch_score, 2))
+        draw_gauge_with_info("Job-Role Mismatch Score", round(mismatch_score, 2), mismatch_tooltip, "mismatch_info")
+    with col3:
+        draw_gauge_with_info("Skill Mismatch Score", round(skill_score, 2), skill_tooltip, "skill_info")
+    
+    st.markdown(f"### 🏷 Prediction: *{prediction_label}*")
 
-    st.markdown(f"###  Prediction: *{prediction_label}*")
-
-    with st.expander(" Job Summary (Your Input)", expanded=True):
+    # Job Summary
+    with st.expander("Job Summary (Your Input)", expanded=True):
         for key, val in inputs.items():
             if val.strip():
                 st.markdown(f"{key}:** {val}")
 
+    # Back button to submit again
     if st.button("🔄 Evaluate Another Job"):
         st.session_state.show_results = False
-        st.experimental_set_query_params()
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.rerun()
