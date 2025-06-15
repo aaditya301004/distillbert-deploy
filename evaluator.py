@@ -22,7 +22,7 @@ except LookupError:
 
 
 class RobustJobMismatchEvaluator:
-    def _init_(self):
+    def __init__(self):
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.stop_words = set(stopwords.words('english'))
 
@@ -109,7 +109,7 @@ class RobustJobMismatchEvaluator:
         return final_mismatch_score * 100  # Return percentage
     
 class SkillValidityEvaluator:
-    def _init_(self):
+    def __init__(self):
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.stop_words = set(stopwords.words('english'))
         self.skill_stop_words = {
