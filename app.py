@@ -383,7 +383,7 @@ def create_info_button(tooltip_text, button_id):
     """
 
 # ----------------- Gauge Drawing Function -----------------
-def draw_gauge_with_info(title, value, tooltip_text, button_id):
+def draw_gauge_with_info(title, value, tooltip_text, button_id, chart_key):
     # Create title with info button
     title_html = f"""
     <div class="gauge-title">
