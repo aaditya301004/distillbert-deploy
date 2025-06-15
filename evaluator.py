@@ -4,9 +4,13 @@ from collections import Counter
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer,util
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
+from nltk import pos_tag, word_tokenize
+from rapidfuzz import fuzz
 
 # Ensure NLTK data is available
 try:
@@ -18,7 +22,7 @@ except LookupError:
 
 
 class RobustJobMismatchEvaluator:
-    def __init__(self):
+    def _init_(self):
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.stop_words = set(stopwords.words('english'))
 
@@ -103,9 +107,9 @@ class RobustJobMismatchEvaluator:
         final_mismatch_score = (0.6 * avg_sim_mismatch) + (0.4 * avg_overlap_mismatch)
 
         return final_mismatch_score * 100  # Return percentage
-
+    
 class SkillValidityEvaluator:
-    def __init__(self):
+    def _init_(self):
         self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.stop_words = set(stopwords.words('english'))
         self.skill_stop_words = {
