@@ -622,7 +622,7 @@ currency_options = {
 }
 
 # ----------------- UI -----------------
-st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>🕵 Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
 st.markdown("<hr style='border: 1px solid #ccc;'>", unsafe_allow_html=True)
 
 if not st.session_state.show_results:
