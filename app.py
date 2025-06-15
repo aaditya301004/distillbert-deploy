@@ -1,3 +1,7 @@
+import os
+os.environ["USE_TF"] = "0"
+os.environ["TRANSFORMERS_NO_TF_WARNING"] = "1"
+
 import streamlit as st
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import torch
@@ -415,7 +419,7 @@ def draw_gauge_with_info(title, value, tooltip_text, button_id):
         plot_bgcolor='rgba(0,0,0,0)',   # Transparent plot background
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
 
 # ----------------- Initialize Session -----------------
 if "show_results" not in st.session_state:
