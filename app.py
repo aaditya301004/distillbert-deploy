@@ -1,3 +1,7 @@
+import os
+os.environ["USE_TF"] = "0"
+os.environ["TRANSFORMERS_NO_TF_WARNING"] = "1"
+
 import streamlit as st
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 import torch
