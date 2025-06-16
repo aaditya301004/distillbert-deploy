@@ -361,17 +361,31 @@ div[data-testid="stPlotlyChart"] > div {
 # ----------------- Load Model & Evaluator -----------------
 @st.cache_resource
 def load_model_and_tokenizer():
-    tokenizer = DistilBertTokenizer.from_pretrained("Model_folder", local_files_only=True)
-    model = DistilBertForSequenceClassification.from_pretrained("Model_folder", local_files_only=True)
-    model.eval()
-    return model, tokenizer
+    try:
+        tokenizer = DistilBertTokenizer.from_pretrained("Model_folder", local_files_only=True)
+        model = DistilBertForSequenceClassification.from_pretrained("Model_folder", local_files_only=True)
+        model.eval()
+        return model, tokenizer
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        st.info("Using demo mode - model predictions will be simulated")
+        return None, None
 
 @st.cache_resource
 def load_evaluators():
-    return RobustJobMismatchEvaluator(), SkillValidityEvaluator()
+    try:
+        return RobustJobMismatchEvaluator(), SkillValidityEvaluator()
+    except Exception as e:
+        st.error(f"Error loading evaluators: {str(e)}")
+        st.info("Using demo mode - evaluator scores will be simulated")
+        return None, None
 
+# Try to load model and evaluators
 model, tokenizer = load_model_and_tokenizer()
 mismatch_evaluator, skill_evaluator = load_evaluators()
+
+# Demo mode flag
+DEMO_MODE = model is None or tokenizer is None or mismatch_evaluator is None or skill_evaluator is None
 
 # ----------------- Info Button Helper Function -----------------
 def create_info_button(tooltip_text, button_id):
@@ -420,6 +434,57 @@ def draw_gauge_with_info(title, value, tooltip_text, button_id, chart_key):
     )
     
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
+
+# ----------------- Demo Functions -----------------
+def demo_model_prediction(text):
+    """Simulate model prediction for demo mode"""
+    import random
+    import hashlib
+    
+    # Use text hash to ensure consistent results for same input
+    text_hash = int(hashlib.md5(text.encode()).hexdigest(), 16) % 100
+    
+    # Simulate prediction based on some heuristics
+    fraud_indicators = ['urgent', 'immediate', 'no experience required', 'work from home', 
+                       'easy money', 'guaranteed', 'click here', 'act now']
+    
+    fraud_score = sum(1 for indicator in fraud_indicators if indicator.lower() in text.lower())
+    
+    # Base prediction on hash and fraud indicators
+    is_fake = (text_hash > 60) or (fraud_score > 2)
+    confidence = min(95, 60 + fraud_score * 10 + (text_hash % 30))
+    
+    return is_fake, confidence
+
+def demo_mismatch_score(job_title, job_description):
+    """Simulate mismatch evaluation for demo mode"""
+    import hashlib
+    
+    combined = f"{job_title} {job_description}".lower()
+    hash_val = int(hashlib.md5(combined.encode()).hexdigest(), 16) % 100
+    
+    # Simple heuristic: if title words appear in description, lower mismatch
+    title_words = set(job_title.lower().split())
+    desc_words = set(job_description.lower().split())
+    overlap = len(title_words.intersection(desc_words))
+    
+    base_score = max(10, 80 - overlap * 15)
+    return min(95, base_score + (hash_val % 20))
+
+def demo_skill_score(skills, job_description, industry):
+    """Simulate skill evaluation for demo mode"""
+    import hashlib
+    
+    combined = f"{skills} {job_description} {industry}".lower()
+    hash_val = int(hashlib.md5(combined.encode()).hexdigest(), 16) % 100
+    
+    # Simple heuristic based on skill-description overlap
+    skill_words = set(skills.lower().split())
+    desc_words = set(job_description.lower().split())
+    overlap = len(skill_words.intersection(desc_words))
+    
+    base_score = max(5, 70 - overlap * 10)
+    return min(90, base_score + (hash_val % 25))
 
 # ----------------- Initialize Session -----------------
 if "show_results" not in st.session_state:
@@ -623,6 +688,8 @@ currency_options = {
 
 # ----------------- UI -----------------
 st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>Job Fraud & Mismatch Evaluator</h1>", unsafe_allow_html=True)
+if DEMO_MODE:
+    st.warning("⚠️ Running in Demo Mode - Model files not found. Results are simulated for demonstration purposes.")
 st.markdown("<hr style='border: 1px solid #ccc;'>", unsafe_allow_html=True)
 
 if not st.session_state.show_results:
@@ -633,35 +700,35 @@ if not st.session_state.show_results:
 
     col1, col2 = st.columns(2)
     with col1:
-        job_title = st.text_input(" Job Title *", placeholder="e.g., Data Analyst")
+        job_title = st.text_input("Job Title *", placeholder="e.g., Data Analyst")
     with col2:
         employment_type = st.selectbox("Employment Type *", [
-        "Full-time",
-        "Part-time",
-        "Internship",
-        "Freelance / Contract",
-        "Temporary",
-        "Volunteer",
-        "Apprenticeship",
-        "Seasonal",
-        "Commission-Based",
-        "Remote (Full-time)",
-        "Remote (Part-time)",
-        "Graduate Program",
-        "Internship & Graduate",
-        "Self-employed",
-        "Casual / On-call",
-        "Work Abroad",
-        "Fixed-term",
-        "Fellowship",
-        "Other"
-    ])
+            "Full-time",
+            "Part-time",
+            "Internship",
+            "Freelance / Contract",
+            "Temporary",
+            "Volunteer",
+            "Apprenticeship",
+            "Seasonal",
+            "Commission-Based",
+            "Remote (Full-time)",
+            "Remote (Part-time)",
+            "Graduate Program",
+            "Internship & Graduate",
+            "Self-employed",
+            "Casual / On-call",
+            "Work Abroad",
+            "Fixed-term",
+            "Fellowship",
+            "Other"
+        ])
 
-    job_description = st.text_area(" Job Description *", height=150)
-    skill_desc = st.text_area(" Skills Required *", height=100)
-    location = st.text_input(" Location *", placeholder="e.g., Bangalore, India")
+    job_description = st.text_area("Job Description *", height=150)
+    skill_desc = st.text_area("Skills Required *", height=100)
+    location = st.text_input("Location *", placeholder="e.g., Bangalore, India")
 
-    st.markdown("###  Optional Details")
+    st.markdown("### Optional Details")
 
     st.markdown("#### Salary Range")
     col3, col4, col5, col6 = st.columns([1.5, 1.5, 1, 1.5])
