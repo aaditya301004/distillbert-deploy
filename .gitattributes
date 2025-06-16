@@ -1,6 +1,0 @@
-Model_folder/*.safetensors filter=lfs diff=lfs merge=lfs -text
-<<<<<<< HEAD
-*.xlsx filter=lfs diff=lfs merge=lfs -text
-*.xls filter=lfs diff=lfs merge=lfs -text
-=======
->>>>>>> 157ab619310ccc847c4fefe34bb83fba9e888c70
